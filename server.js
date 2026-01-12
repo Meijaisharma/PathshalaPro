@@ -1,7 +1,6 @@
 const express = require('express');
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
-const { Api } = require("telegram/tl");
 const path = require('path');
 const cors = require('cors');
 
@@ -14,9 +13,9 @@ const apiId = parseInt(process.env.API_ID);
 const apiHash = process.env.API_HASH;
 const stringSession = new StringSession(process.env.SESSION_STRING);
 
-let client; // Telegram Client
+let client; 
 
-// Connect to Telegram when server starts
+// Connect to Telegram
 (async () => {
     console.log("Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, { connectionRetries: 5 });
@@ -24,53 +23,60 @@ let client; // Telegram Client
     console.log("✅ Telegram Connected!");
 })();
 
-// Helper: Real Message ID Calculator
+// Helper: ID Calculator
 function getRealId(customId) {
     customId = parseInt(customId);
-    // Logic: 1-115 -> +1 | 116+ -> +43
     if (customId <= 115) return customId + 1;
     return customId + 43;
 }
 
-// VIDEO STREAMING API
+// 1. VIDEO STREAMING API
 app.get('/api/video/:id', async (req, res) => {
     if (!client) return res.status(500).send("Server starting...");
-    
     try {
         const msgId = getRealId(req.params.id);
-        const channelUsername = "jaikipathshalax"; // Aapka channel
-
-        // Fetch Message
-        const messages = await client.getMessages(channelUsername, { ids: [msgId] });
-        const media = messages[0].media;
+        const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
+        const media = messages[0]?.media;
 
         if (!media) return res.status(404).send("Video not found");
 
-        // Set Headers for Video Streaming
         res.setHeader('Content-Type', 'video/mp4');
-        
-        // Stream the file directly
-        const stream = await client.downloadMedia(media, { outputFile: res });
-        
+        await client.downloadMedia(media, { outputFile: res });
     } catch (error) {
         console.error(error);
         res.status(500).send("Error streaming video");
     }
 });
 
-// PDF API (Direct Download)
+// 2. PDF API
 app.get('/api/pdf/:id', async (req, res) => {
     if (!client) return res.status(500).send("Wait...");
     try {
-        const msgId = parseInt(req.params.id); // PDF IDs are direct (202-289)
+        const msgId = parseInt(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
-        
-        if(!messages[0].media) return res.status(404).send("PDF not found");
+        if(!messages[0]?.media) return res.status(404).send("PDF not found");
 
         res.setHeader('Content-Type', 'application/pdf');
         await client.downloadMedia(messages[0].media, { outputFile: res });
     } catch (e) {
         res.status(500).send("Error");
+    }
+});
+
+// 3. META DATA API (New Feature: Fetch Caption/Text) 🌟
+app.get('/api/meta/:id', async (req, res) => {
+    if (!client) return res.status(500).json({ text: "Loading details..." });
+    try {
+        const msgId = getRealId(req.params.id);
+        const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
+        const msg = messages[0];
+        
+        // Agar caption hai to wo bhejo, nahi to default text
+        const caption = msg?.message || "No description available for this lecture.";
+        
+        res.json({ text: caption });
+    } catch (e) {
+        res.status(500).json({ text: "Error fetching details." });
     }
 });
 

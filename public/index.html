@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PathshalaX Player</title>
+    <title>PathshalaX App</title>
     <script defer>
     document.body.appendChild(document.createElement('div')).setAttribute('id','chatBubbleRoot');
     window.agx = '6934343387f32926e0ce98c7nh68JtWTZWMcl+4M7hhx0Q==|j60xUyLrrN6uagKuD9uuWwxutxoXrdgRUbh4ouR1n8U=';
@@ -11,293 +11,227 @@
     <script defer src="https://storage.googleapis.com/agentx-cdn-01/agentx-chat.js"></script>
     
     <style>
-        /* --- NEW AESTHETIC COLOR PALETTE --- */
-        :root {
-            --primary: #2E4F4F;      /* Dark Green for headers, active tabs */
-            --secondary: #CFF09E;    /* Light Green for accents, icons */
-            --accent: #A5D6A7;       /* A slightly darker light green for hover/active states */
-            --bg: #F7F9F9;           /* Clean light gray/white background */
-            --card-bg: #FFFFFF;      /* Pure white for cards */
-            --text: #37474F;         /* Dark gray for main text */
-            --text-light: #78909C;   /* Lighter gray for secondary text */
-            --border: #E0E0E0;       /* Light gray for borders */
-        }
+        :root { --primary: #5a4bda; --header-bg: #1E1E1E; --header-text: #FFFFFF; --bg: #F5F7FB; --card-bg: #FFFFFF; --text: #1B2124; --text-light: #757575; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; }
+        .app-container { width: 100%; max-width: 480px; margin: 0 auto; background: var(--bg); min-height: 100vh; position: relative; overflow-x: hidden; }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
-        .main-container { width: 100%; max-width: 480px; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+        /* VIEW 1: HOME */
+        #homeView { display: block; }
+        .home-header { padding: 15px 20px; background: var(--header-bg); color: var(--header-text); position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header-logo { width: 28px; height: 28px; fill: var(--header-text); }
+        .brand-name { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
 
-        /* --- 1. VIDEO SECTION --- */
-        .video-container { position: sticky; top: 0; z-index: 100; background: black; width: 100%; aspect-ratio: 16/9; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .pill-tabs { display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto; scrollbar-width: none; background: var(--bg); }
+        .pill-tab { padding: 8px 20px; background: white; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--text-light); white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+        .pill-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .content-list { padding: 0 15px 80px 15px; }
+        .lecture-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; border: 1px solid transparent; transition: transform 0.1s; }
+        .lecture-card:active { transform: scale(0.98); }
+        .play-btn-circle { width: 42px; height: 42px; background: #EEF1FF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 16px; margin-right: 15px; flex-shrink: 0; }
+        .card-details { flex: 1; }
+        .card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+        .card-meta { font-size: 11px; color: var(--text-light); font-weight: 500; }
+        .pdf-card { border-left: 4px solid #FF5252; }
+        .pdf-btn-circle { background: #FFF0F0; color: #FF5252; }
+        .dl-btn { display: inline-block; margin-top: 8px; background: var(--text); color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: 600; }
+        .open-btn { display: inline-block; margin-top: 8px; background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 5px 11px; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: 600; margin-right: 5px; }
+
+        /* VIEW 2: PLAYER */
+        #playerView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 20; overflow-y: auto; }
+        .player-header { position: sticky; top: 0; z-index: 100; background: black; width: 100%; aspect-ratio: 16/9; }
         video { width: 100%; height: 100%; object-fit: contain; }
-        .video-controls { position: absolute; top: 10px; right: 10px; z-index: 101; }
-        .quality-btn { background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(5px); }
-        .quality-menu { display: none; position: absolute; top: 40px; right: 0; background: rgba(0,0,0,0.8); border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .quality-menu button { display: block; width: 100%; padding: 10px 15px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .quality-menu button:last-child { border-bottom: none; }
-        .quality-menu button:hover { background: rgba(255,255,255,0.15); }
-
-        /* --- 2. INFO & TABS SECTION --- */
-        .info-section { padding: 20px 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); border-radius: 0 0 20px 20px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .video-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .video-meta { font-size: 13px; color: var(--text-light); margin-top: 8px; font-weight: 500; }
-
-        .tabs-nav { display: flex; justify-content: space-around; padding: 12px 0; background: var(--card-bg); border-radius: 20px; margin: 0 10px 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); font-size: 11px; cursor: pointer; width: 20%; transition: color 0.2s; }
-        .nav-item.active { color: var(--primary); font-weight: 600; }
-        .nav-icon { font-size: 22px; margin-bottom: 5px; }
-
-        /* --- 3. CONTENT SECTION --- */
-        .content-area { flex: 1; background: var(--bg); overflow-y: auto; padding: 0 10px; }
+        .back-btn-overlay { position: absolute; top: 15px; left: 15px; z-index: 101; background: rgba(0,0,0,0.5); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; font-size: 18px; backdrop-filter: blur(4px); }
         
-        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 5px; }
-        .section-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); }
-        .close-icon { font-size: 24px; color: var(--text-light); cursor: pointer; line-height: 1; padding: 5px; transition: color 0.2s; }
-        .close-icon:hover { color: var(--primary); }
-
-        .list-container { padding: 0; }
-        .list-item { display: flex; align-items: center; padding: 12px 15px; background: var(--card-bg); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .list-item:active { transform: scale(0.98); }
-        .item-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 18px; flex-shrink: 0; }
-        .play-icon { background: var(--secondary); color: var(--primary); }
-        .pdf-icon { background: var(--secondary); color: var(--primary); }
-        .item-info { flex: 1; }
-        .item-title { font-size: 15px; font-weight: 600; margin: 0; color: var(--text); }
-        .item-desc { font-size: 12px; color: var(--text-light); margin: 4px 0 0; }
+        .info-box { padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; }
+        .video-main-title { font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 8px; }
+        .video-sub-meta { font-size: 12px; color: var(--text-light); }
         
-        /* PDF Actions */
-        .pdf-actions { display: flex; align-items: center; gap: 10px; }
-        .pdf-btn { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s; display: flex; align-items: center; gap: 5px; }
-        .pdf-open { background: var(--secondary); color: var(--primary); }
-        .pdf-download { background: var(--border); color: var(--text); }
-        .pdf-btn:hover { opacity: 0.9; }
+        .action-tabs { display: flex; justify-content: space-around; border-bottom: 1px solid #f0f0f0; padding: 10px 0; background: white; }
+        .action-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: var(--text-light); width: 20%; }
+        .action-tab.active { color: var(--primary); }
+        .tab-content { padding: 0; min-height: 300px; background: var(--bg); }
+        .tab-pane { display: none; padding: 20px; }
+        .tab-pane.active { display: block; }
         
-        .item-arrow { color: var(--text-light); font-size: 18px; }
-        .list-item.playing { background: var(--secondary); border: 1px solid var(--primary); }
-        .list-item.playing .item-title { color: var(--primary); }
+        /* Telegram Description Style */
+        .telegram-desc { font-size: 14px; line-height: 1.6; color: #333; white-space: pre-wrap; background: white; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
 
-        /* Chat/Doubt Section */
-        .chat-section { display: none; padding: 30px 20px; text-align: center; color: var(--text-light); background: var(--card-bg); border-radius: 20px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .chat-input-area { margin-top: 25px; display: flex; gap: 10px; }
-        .chat-input { flex: 1; padding: 12px 15px; border: 1px solid var(--border); border-radius: 25px; outline: none; font-size: 14px; background: var(--bg); }
-        .send-btn { padding: 12px 25px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; }
-        .send-btn:hover { background: #1e3636; }
+        /* Chat UI */
+        .chat-container { display: flex; flex-direction: column; height: 300px; background: white; border-radius: 12px; border: 1px solid #eee; overflow: hidden; }
+        .chat-messages { flex: 1; padding: 15px; background: #f9f9f9; text-align: center; color: #999; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+        .chat-input-box { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; }
+        .chat-input { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 8px 15px; font-size: 13px; outline: none; }
+        .chat-send { background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* Utility classes */
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <div class="video-container">
-        <video id="mainVideoPlayer" controls playsinline controlsList="nodownload" poster="https://via.placeholder.com/640x360/2E4F4F/CFF09E?text=PathshalaX">
-            Your browser does not support video.
-        </video>
-        <div class="video-controls">
-            <button class="quality-btn" onclick="toggleQualityMenu()">⚙️ Quality</button>
-            <div class="quality-menu" id="qualityMenu">
-                <button onclick="setQuality('1080p')">1080p FHD</button>
-                <button onclick="setQuality('1440p')">1440p QHD</button>
-                <button onclick="setQuality('720p')">720p HD</button>
-                <button onclick="setQuality('480p')">480p SD</button>
-            </div>
+<div class="app-container">
+    <div id="homeView">
+        <div class="home-header">
+            <svg class="header-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path d="M2 17L12 22L22 17"/>
+                <path d="M2 12L12 17L22 12"/>
+            </svg>
+            <div class="brand-name">PathshalaX</div>
         </div>
+        <div class="pill-tabs">
+            <div class="pill-tab active" onclick="filterHome('lectures', this)">Lectures</div>
+            <div class="pill-tab" onclick="filterHome('notes', this)">PDF Notes</div>
+            <div class="pill-tab" onclick="filterHome('doubts', this)">Doubts</div>
+        </div>
+        <div id="homeContent" class="content-list"></div>
     </div>
 
-    <div class="info-section">
-        <h3 class="video-title" id="videoTitle">Welcome to PathshalaX</h3>
-        <p class="video-meta">Mentor: Jai Sir • Professional Learning</p>
-    </div>
-
-    <div class="tabs-nav">
-        <div class="nav-item active" onclick="switchTab('timeline')">
-            <span class="nav-icon">⏱️</span>
-            <span>Timeline</span>
+    <div id="playerView">
+        <div class="player-header">
+            <div class="back-btn-overlay" onclick="closePlayer()">←</div>
+            <video id="videoPlayer" controls playsinline controlsList="nodownload">
+                Your browser does not support video.
+            </video>
         </div>
-        <div class="nav-item" onclick="switchTab('notes')">
-            <span class="nav-icon">📄</span>
-            <span>Notes</span>
+        <div class="info-box">
+            <div class="video-main-title" id="playerTitle">Loading...</div>
+            <div class="video-sub-meta">Hindi Sahitya • Jai Sir</div>
         </div>
-        <div class="nav-item" onclick="switchTab('comments')">
-            <span class="nav-icon">💬</span>
-            <span>Comments</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('attachments')">
-            <span class="nav-icon">📎</span>
-            <span>Attachm...</span>
-        </div>
-        <div class="nav-item" onclick="switchTab('rating')">
-            <span class="nav-icon">⭐</span>
-            <span>Rating</span>
-        </div>
-    </div>
-
-    <div class="content-area">
-        <div class="section-header">
-            <h4 class="section-title">Course Content</h4>
-            <span class="close-icon" onclick="toggleChatSystem()">✕</span>
-        </div>
-
-        <div id="timelineList" class="list-container">
+        <div class="action-tabs">
+            <div class="action-tab active" onclick="switchPlayerTab('info', this)">
+                <span style="font-size:20px">ℹ️</span><span style="font-size:10px;font-weight:600">Details</span>
             </div>
-
-        <div id="notesList" class="list-container hidden">
+            <div class="action-tab" onclick="switchPlayerTab('notes', this)">
+                <span style="font-size:20px">📄</span><span style="font-size:10px;font-weight:600">Notes</span>
             </div>
-
-        <div id="chatSystem" class="chat-section">
-            <div style="font-size: 50px; margin-bottom: 15px; color: var(--secondary);">💭</div>
-            <h3 style="color: var(--primary);">Doubts & Discussion</h3>
-            <p>Ask questions or discuss topics with teachers and classmates.</p>
-            <div class="chat-input-area">
-                <input type="text" class="chat-input" placeholder="Type your doubt here...">
-                <button class="send-btn">Send</button>
+            <div class="action-tab" onclick="switchPlayerTab('chat', this)">
+                <span style="font-size:20px">💬</span><span style="font-size:10px;font-weight:600">Chat</span>
             </div>
         </div>
-         
-         <div id="commentsPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Comments Section</h3><p>Coming soon...</p></div>
-        <div id="attachmentsPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Attachments Section</h3><p>No attachments.</p></div>
-        <div id="ratingPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Rate this Course</h3><p>Coming soon...</p></div>
+
+        <div class="tab-content">
+            <div id="tab-info" class="tab-pane active">
+                <h4 style="margin:0 0 10px 0; color:#555;">Lecture Details</h4>
+                <div id="telegramDetails" class="telegram-desc">Fetching details from Telegram...</div>
+            </div>
+
+            <div id="tab-notes" class="tab-pane">
+                <div id="playerNotesContainer"></div>
+            </div>
+
+            <div id="tab-chat" class="tab-pane">
+                <div class="chat-container">
+                    <div class="chat-messages">
+                        <div><div style="font-size:30px; margin-bottom:10px;">👋</div>Ask your doubts here.</div>
+                    </div>
+                    <div class="chat-input-box">
+                        <input type="text" class="chat-input" placeholder="Type a message...">
+                        <button class="chat-send">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    const videoPlayer = document.getElementById('mainVideoPlayer');
-    const videoTitleDisplay = document.getElementById('videoTitle');
-    const qualityMenu = document.getElementById('qualityMenu');
-    let currentPlayingId = null;
-
-    // --- DATA POPULATION ---
-    const timelineList = document.getElementById('timelineList');
-    const notesList = document.getElementById('notesList');
-
-    // Load Lectures (1-157)
+    const homeContent = document.getElementById('homeContent');
+    const playerNotesContainer = document.getElementById('playerNotesContainer');
+    
+    // Generate Lectures
+    let lecturesHTML = '';
     for(let i=1; i<=157; i++){
-        let div = document.createElement('div');
-        div.className = 'list-item';
-        div.id = `lecture-${i}`;
-        div.innerHTML = `
-            <div class="item-icon play-icon">▶</div>
-            <div class="item-info">
-                <h5 class="item-title">Lecture ${i}: Hindi Sahitya Part ${i}</h5>
-                <p class="item-desc">Tap to play video</p>
-            </div>
-            <div class="item-arrow">❯</div>
-        `;
-        div.onclick = () => playVideo(i);
-        timelineList.appendChild(div);
+        lecturesHTML += `
+            <div class="lecture-card" onclick="openPlayer(${i})">
+                <div class="play-btn-circle">▶</div>
+                <div class="card-details">
+                    <div class="card-title">Lecture ${i}</div>
+                    <div class="card-meta">Tap to watch • Jai Sir</div>
+                </div>
+                <div class="card-arrow">❯</div>
+            </div>`;
     }
 
-    // Load Notes (202-289) with OPEN and DOWNLOAD options
+    // Generate Notes
+    let notesHTML = '';
     let noteCount = 1;
     for(let i=202; i<=289; i++){
-        let div = document.createElement('div');
-        div.className = 'list-item';
-        // Using 'a' tags for download/open behavior
-        div.innerHTML = `
-            <div class="item-icon pdf-icon">📄</div>
-            <div class="item-info">
-                <h5 class="item-title">Class Note ${noteCount}</h5>
-                <p class="item-desc">PDF Document</p>
-            </div>
-            <div class="pdf-actions">
-                <a href="/api/pdf/${i}" class="pdf-btn pdf-open">Open</a>
-                <a href="/api/pdf/${i}" download="Note_${noteCount}.pdf" class="pdf-btn pdf-download">Isse Download Kare</a>
-            </div>
-        `;
-        // Removed onclick from the main div, actions are now on the buttons
-        notesList.appendChild(div);
+        notesHTML += `
+            <div class="lecture-card pdf-card">
+                <div class="play-btn-circle pdf-btn-circle">📄</div>
+                <div class="card-details">
+                    <div class="card-title">Class Note ${noteCount}</div>
+                    <div class="card-meta">PDF Document</div>
+                    <div>
+                        <a href="/api/pdf/${i}" target="_blank" class="open-btn">Open</a>
+                        <a href="/api/pdf/${i}" download class="dl-btn">Download</a>
+                    </div>
+                </div>
+            </div>`;
         noteCount++;
     }
 
-    // Play first video automatically (optional)
-    // playVideo(1); 
+    homeContent.innerHTML = lecturesHTML;
+    playerNotesContainer.innerHTML = notesHTML;
 
-    // --- FUNCTIONS ---
+    window.filterHome = function(type, btn) {
+        document.querySelectorAll('.pill-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        if(type === 'lectures') homeContent.innerHTML = lecturesHTML;
+        else if(type === 'notes') homeContent.innerHTML = notesHTML;
+        else homeContent.innerHTML = `<div style="text-align:center; padding:50px; color:#999;">No Doubts Raised Yet</div>`;
+    }
 
-    function playVideo(id) {
-        // Update active state in list
-        if(currentPlayingId) document.getElementById(`lecture-${currentPlayingId}`).classList.remove('playing');
-        document.getElementById(`lecture-${id}`).classList.add('playing');
-        currentPlayingId = id;
-
-        // Update title and play
-        videoTitleDisplay.textContent = `Lecture ${id}: Hindi Sahitya Part ${id}`;
-        videoPlayer.src = `/api/video/${id}`;
-        videoPlayer.play();
+    window.openPlayer = function(id) {
+        document.getElementById('homeView').style.display = 'none';
+        document.getElementById('playerView').style.display = 'block';
         
-        // Ensure Timeline tab is active
-        switchTab('timeline');
-    }
-
-    function switchTab(tabName) {
-        // 1. Reset Nav Items
-        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        // 2. Set active nav item (simple check based on onclick text)
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if(item.innerText.toLowerCase().includes(tabName.substring(0,3))) item.classList.add('active');
-        });
-
-        // 3. Hide all content sections
-        document.querySelectorAll('.list-container, .chat-section').forEach(el => el.classList.add('hidden'));
-
-        // 4. Show selected content
-        if(tabName === 'timeline') document.getElementById('timelineList').classList.remove('hidden');
-        else if(tabName === 'notes') document.getElementById('notesList').classList.remove('hidden');
-        else if(tabName === 'comments') document.getElementById('commentsPlaceholder').classList.remove('hidden');
-        else if(tabName === 'attachments') document.getElementById('attachmentsPlaceholder').classList.remove('hidden');
-        else if(tabName === 'rating') document.getElementById('ratingPlaceholder').classList.remove('hidden');
+        // 1. Play Video
+        const vid = document.getElementById('videoPlayer');
+        vid.src = `/api/video/${id}`;
+        vid.play();
         
-        // Ensure Chat System is hidden when switching tabs
-        document.getElementById('chatSystem').classList.add('hidden');
-        document.querySelector('.section-title').textContent = "Course Content";
-        document.querySelector('.close-icon').textContent = "✕";
-    }
-
-    // Toggle between Content List and Chat System using 'X' button
-    function toggleChatSystem() {
-        const chatSystem = document.getElementById('chatSystem');
-        const sectionTitle = document.querySelector('.section-title');
-        const closeIcon = document.querySelector('.close-icon');
+        // 2. Set Basic Title
+        document.getElementById('playerTitle').innerText = `Lecture ${id}`;
         
-        // Find currently active list/placeholder to toggle back
-        const activeTab = document.querySelector('.nav-item.active').innerText.toLowerCase();
-        let activeContentId = '';
-        if(activeTab.includes('time')) activeContentId = 'timelineList';
-        else if(activeTab.includes('note')) activeContentId = 'notesList';
-        else activeContentId = activeTab.substring(0,3) + 'Placeholder'; // simplistic fallback
+        // 3. FETCH TELEGRAM CAPTION (The Feature You Asked For)
+        const detailsBox = document.getElementById('telegramDetails');
+        detailsBox.innerText = "Fetching details from Telegram..."; // Reset text
+        
+        fetch(`/api/meta/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.text) {
+                    detailsBox.innerText = data.text; // Show Real Caption
+                    
+                    // Try to set Title from first line of caption
+                    const firstLine = data.text.split('\n')[0];
+                    if(firstLine && firstLine.length < 50) {
+                        document.getElementById('playerTitle').innerText = firstLine;
+                    }
+                }
+            })
+            .catch(err => {
+                detailsBox.innerText = "Could not load details.";
+            });
 
-        if (chatSystem.classList.contains('hidden')) {
-            // Show Chat System
-            document.querySelectorAll('.list-container, .chat-section:not(#chatSystem)').forEach(el => el.classList.add('hidden'));
-            chatSystem.classList.remove('hidden');
-            sectionTitle.textContent = "Doubts & Chat";
-            closeIcon.textContent = "←"; // Change X to Back arrow
-        } else {
-            // Hide Chat System & Show back the active tab's content
-            chatSystem.classList.add('hidden');
-            document.getElementById(activeContentId).classList.remove('hidden');
-            sectionTitle.textContent = "Course Content";
-            closeIcon.textContent = "✕"; // Change Back arrow to X
-        }
+        // Open Info Tab by default
+        switchPlayerTab('info', document.querySelectorAll('.action-tab')[0]);
     }
 
-    // Video Quality UI Menu Toggle
-    function toggleQualityMenu() {
-        qualityMenu.style.display = qualityMenu.style.display === 'block' ? 'none' : 'block';
+    window.closePlayer = function() {
+        document.getElementById('videoPlayer').pause();
+        document.getElementById('playerView').style.display = 'none';
+        document.getElementById('homeView').style.display = 'block';
     }
 
-    function setQuality(quality) {
-        alert(`Quality set to ${quality} (UI Demo Only)`);
-        toggleQualityMenu();
-        // Real implementation would require backend transcoding support.
+    window.switchPlayerTab = function(tabName, btn) {
+        document.querySelectorAll('.action-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
     }
-
-    // Close quality menu when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.video-controls')) {
-            qualityMenu.style.display = 'none';
-        }
-    });
 </script>
 </body>
 </html>
