@@ -23,7 +23,7 @@ let client;
         useWSS: false 
     });
     await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected!");
+    console.log("✅ Telegram Connected! Gold Standard Mode.");
 })();
 
 function getRealId(customId) {
@@ -32,7 +32,7 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. NATIVE VIDEO STREAMING (Most Stable) 🎥
+// 1. VIDEO STREAMING (The Logic that worked previously) 🚀
 app.get('/api/video/:id', async (req, res) => {
     if (!client) return res.status(500).send("Booting...");
     
@@ -43,9 +43,18 @@ app.get('/api/video/:id', async (req, res) => {
 
         if (!media || !media.document) return res.status(404).send("Video not found");
 
-        // Convert BigInt size to Number safely
         const fileSize = Number(media.document.size);
         const range = req.headers.range;
+
+        // Browser aksar pehle size puchta hai (HEAD request)
+        if (req.method === 'HEAD') {
+            res.writeHead(200, {
+                "Content-Length": fileSize,
+                "Content-Type": "video/mp4",
+                "Accept-Ranges": "bytes"
+            });
+            return res.end();
+        }
 
         if (range) {
             const parts = range.replace(/bytes=/, "").split("-");
@@ -60,14 +69,22 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // FIX: Library ko khud stream handle karne do (outputFile: res)
-            await client.downloadMedia(media, { 
-                outputFile: res, // Direct Stream to Browser
+            // MANUAL STREAM CONTROL (Ye wala logic best hai)
+            const stream = client.iterDownload(media, { 
                 offset: start, 
                 limit: chunksize,
-                workers: 1 // Stability ke liye 1 hi rakhein
+                chunkSize: 1024 * 1024, // 1MB Chunks (Best for Speed)
+                workers: 1 // Stable Streaming
             });
-            
+
+            for await (const chunk of stream) {
+                // Agar browser ready nahi hai, to wait karo (Anti-Buffer Logic)
+                if (!res.write(chunk)) {
+                    await new Promise(resolve => res.once('drain', resolve));
+                }
+            }
+            res.end();
+
         } else {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -77,7 +94,6 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Stream Error:", error);
         if (!res.headersSent) res.end();
     }
 });
