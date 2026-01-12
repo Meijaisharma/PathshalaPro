@@ -15,26 +15,25 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// --- HEARTBEAT & AUTO-RECONNECT SYSTEM ---
+// --- ROBUST CONNECTION SYSTEM ---
 async function startTelegram() {
-    console.log("🔄 Connecting to Telegram...");
+    console.log("🔄 Starting System...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
-        connectionRetries: 5,
-        useWSS: true, // Render ke liye sabse best setting
-        deviceModel: "PathshalaServer",
-        appVersion: "1.0.0"
+        connectionRetries: 10,
+        useWSS: true, // Render Friendly
+        autoReconnect: true
     });
     
-    await client.start({ onError: (err) => console.log("Client Error:", err) });
-    console.log("✅ Telegram Connected! Ultimate Mode.");
+    await client.start({ onError: (err) => console.log("System Error:", err) });
+    console.log("✅ VERSION 2.0 LIVE: Telegram Connected!");
     
-    // Heartbeat: Har 30 sec me connection check karega
+    // Heartbeat: Har 20 sec me ping karega
     setInterval(async () => {
         if (!client.connected) {
-            console.log("⚠️ Connection lost, reconnecting...");
+            console.log("⚠️ Heartbeat: Reconnecting...");
             try { await client.connect(); } catch(e) {}
         }
-    }, 30000);
+    }, 20000);
 }
 
 startTelegram();
@@ -45,26 +44,32 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. STABLE VIDEO STREAMING (Native + WSS) 🛡️
+// 1. SELF-HEALING VIDEO API 🛠️
 app.get('/api/video/:id', async (req, res) => {
-    // Request aate hi connection check karo
-    if (!client || !client.connected) {
-        console.log("🔌 Reconnecting for video...");
-        try { await client.connect(); } catch(e) { return res.status(500).send("Connection Error"); }
-    }
-    
     try {
+        if (!client.connected) await client.connect();
+
         const msgId = getRealId(req.params.id);
-        // FRESH FETCH: Har baar naya message layenge taaki link expire na ho
-        const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
-        const media = messages[0]?.media;
+        
+        // Retry Logic (Agar fail ho to 3 baar koshish kare)
+        let media = null;
+        for(let i=0; i<3; i++) {
+            try {
+                const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
+                media = messages[0]?.media;
+                if(media) break; // Mil gya to loop todo
+            } catch(e) {
+                console.log(`Retry ${i+1} fetching video...`);
+                await new Promise(r => setTimeout(r, 1000)); // 1 sec wait
+            }
+        }
 
         if (!media || !media.document) return res.status(404).send("Video not found");
 
         const fileSize = Number(media.document.size);
         const range = req.headers.range;
 
-        // Browser check (HEAD request)
+        // HEAD Request
         if (req.method === 'HEAD') {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -87,12 +92,12 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // ERROR FIX IS HERE: Using downloadMedia (Native) instead of iterDownload
+            // NATIVE DOWNLOAD (Most Stable)
             await client.downloadMedia(media, { 
                 outputFile: res, 
                 offset: start, 
                 limit: chunksize,
-                workers: 1 // Stability ke liye 1 hi rakhein
+                workers: 1
             });
         } else {
             res.writeHead(200, {
@@ -103,15 +108,15 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
-        // Error chupchap handle karein taaki crash na ho
+        // Quiet fail
         if (!res.headersSent) res.end();
     }
 });
 
 // 2. PDF API
 app.get('/api/pdf/:id', async (req, res) => {
-    if (!client.connected) await client.connect();
     try {
+        if (!client.connected) await client.connect();
         const msgId = parseInt(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
         const media = messages[0]?.media;
@@ -130,8 +135,8 @@ app.get('/api/pdf/:id', async (req, res) => {
 
 // 3. META API
 app.get('/api/meta/:id', async (req, res) => {
-    if (!client.connected) await client.connect();
     try {
+        if (!client.connected) await client.connect();
         const msgId = getRealId(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
         res.json({ text: messages[0]?.message || "No description." });
@@ -146,4 +151,13 @@ app.get(/.*/, (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+
+
+
+
+
+
+
+
+
 
