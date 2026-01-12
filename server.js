@@ -15,15 +15,15 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// Optimize Connection
+// Connection
 (async () => {
     console.log("Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
         connectionRetries: 5,
-        useWSS: false // Faster on server
+        useWSS: false 
     });
     await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected! High Speed Mode ON.");
+    console.log("✅ Telegram Connected! Smart Streaming ON.");
 })();
 
 function getRealId(customId) {
@@ -32,7 +32,7 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. ULTRA FAST VIDEO STREAMING 🚀
+// 1. SMART VIDEO STREAMING (Big Chunks + Sequential) 🚀
 app.get('/api/video/:id', async (req, res) => {
     if (!client) return res.status(500).send("Booting...");
     
@@ -59,27 +59,30 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // MAGIC LINE: workers: 4 (4x Speed)
-            await client.downloadMedia(media, { 
-                outputFile: res, 
+            // MAGIC FIX: iterDownload with Bigger ChunkSize (1MB)
+            // Workers = 1 (Safety) | ChunkSize = 1024KB (Speed)
+            const stream = client.iterDownload(media, { 
                 offset: start, 
                 limit: chunksize,
-                workers: 4 
+                chunkSize: 1024 * 1024, // 1MB per request (Fast!)
+                workers: 1
             });
+
+            for await (const chunk of stream) {
+                res.write(chunk);
+            }
             res.end();
 
         } else {
-            // Full download (Browsers usually don't do this for video)
             res.writeHead(200, {
                 "Content-Length": fileSize,
                 "Content-Type": "video/mp4",
             });
-            await client.downloadMedia(media, { outputFile: res, workers: 4 });
+            await client.downloadMedia(media, { outputFile: res, workers: 1 });
         }
 
     } catch (error) {
-        // Quiet fail for stream close
-        if (!res.headersSent) res.status(500).send("Stream Error");
+        if (!res.headersSent) res.end();
     }
 });
 
@@ -98,9 +101,7 @@ app.get('/api/pdf/:id', async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Note_${msgId}.pdf"`);
         
-        // PDF ke liye bhi workers badhaye
-        await client.downloadMedia(media, { outputFile: res, workers: 4 });
-
+        await client.downloadMedia(media, { outputFile: res, workers: 1 });
     } catch (e) {
         res.status(500).send("Error");
     }
