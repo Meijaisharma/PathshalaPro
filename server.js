@@ -15,16 +15,33 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// Connection
-(async () => {
-    console.log("Connecting to Telegram...");
+// --- HEARTBEAT SYSTEM (Ye connection zinda rakhega) ---
+async function startTelegram() {
+    console.log("🔄 Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
         connectionRetries: 5,
-        useWSS: false 
+        useWSS: true // Stable Connection
     });
-    await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected! Emergency Mode.");
-})();
+    
+    await client.start({ onError: (err) => console.log("Telegram Error:", err) });
+    console.log("✅ Telegram Connected!");
+
+    // Har 30 second me ping karega
+    setInterval(async () => {
+        try {
+            if (!client.connected) {
+                console.log("⚠️ Reconnecting...");
+                await client.connect();
+            }
+            // Ek chhota sa message fetch karke connection active rakhein
+            await client.getMe(); 
+        } catch (e) {
+            console.log("Heartbeat skipped");
+        }
+    }, 30000); // 30 Seconds
+}
+
+startTelegram();
 
 function getRealId(customId) {
     customId = parseInt(customId);
@@ -32,9 +49,13 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. STABLE STREAMING (Small Packets) 🐢 -> 🐇
+// 1. ROBUST VIDEO STREAMING (Auto-Reconnect) 🛡️
 app.get('/api/video/:id', async (req, res) => {
-    if (!client) return res.status(500).send("Server starting...");
+    // Agar connection toot gya ho, to turant wapas jodo
+    if (!client || !client.connected) {
+        console.log("🔌 Reconnecting for video request...");
+        await client.connect();
+    }
     
     try {
         const msgId = getRealId(req.params.id);
@@ -46,7 +67,7 @@ app.get('/api/video/:id', async (req, res) => {
         const fileSize = Number(media.document.size);
         const range = req.headers.range;
 
-        // HEAD Request (Browser check)
+        // HEAD Request (Fast Check)
         if (req.method === 'HEAD') {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -69,19 +90,13 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // SMALLER CHUNKS = FASTER START
-            const stream = client.iterDownload(media, { 
+            // Native Stream with 1 Worker (Most Stable)
+            await client.downloadMedia(media, { 
+                outputFile: res, 
                 offset: start, 
                 limit: chunksize,
-                chunkSize: 128 * 1024, // 128KB (Chote packets jaldi load honge)
                 workers: 1
             });
-
-            for await (const chunk of stream) {
-                res.write(chunk);
-            }
-            res.end();
-
         } else {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -91,22 +106,22 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
-        console.log("Stream Error:", error);
+        console.error("Stream Error (Normal if user closed video):", error.message);
         if (!res.headersSent) res.end();
     }
 });
 
 // 2. PDF API
 app.get('/api/pdf/:id', async (req, res) => {
+    if (!client.connected) await client.connect();
     try {
         const msgId = parseInt(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
         const media = messages[0]?.media;
-
+        
         if(!media) return res.status(404).send("PDF not found");
         
-        const fileSize = Number(media.document.size);
-        res.setHeader('Content-Length', fileSize);
+        res.setHeader('Content-Length', Number(media.document.size));
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Note_${msgId}.pdf"`);
         
@@ -118,6 +133,7 @@ app.get('/api/pdf/:id', async (req, res) => {
 
 // 3. META API
 app.get('/api/meta/:id', async (req, res) => {
+    if (!client.connected) await client.connect();
     try {
         const msgId = getRealId(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
