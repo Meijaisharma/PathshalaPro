@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathshala Pro</title>
+    <script defer>
+    document.body.appendChild(document.createElement('div')).setAttribute('id','chatBubbleRoot');
+    window.agx = '6934343387f32926e0ce98c7nh68JtWTZWMcl+4M7hhx0Q==|j60xUyLrrN6uagKuD9uuWwxutxoXrdgRUbh4ouR1n8U=';
+    </script>
+    <script defer src="https://storage.googleapis.com/agentx-cdn-01/agentx-chat.js"></script>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f3f4f6; margin: 0; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; background: white; min-height: 100vh; padding-bottom: 80px; position: relative; }
+        
+        /* Header & Tabs */
+        .header { padding: 20px; border-bottom: 1px solid #e5e7eb; background: white; position: sticky; top: 0; z-index: 10; }
+        .header h3 { margin: 0; font-size: 18px; color: #111827; }
+        .header small { font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
+        
+        .tabs { display: flex; padding: 0 20px; border-bottom: 1px solid #e5e7eb; background: white; }
+        .tab { padding: 15px 20px 15px 0; font-weight: 600; font-size: 14px; color: #9ca3af; cursor: pointer; position: relative; }
+        .tab.active { color: #111827; }
+        .tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 20px; height: 2px; background: #111827; }
+        
+        /* Lists */
+        .list { padding: 20px; display: none; }
+        .list.active { display: block; }
+        
+        /* Cards (Beautiful Design) */
+        .card { background: white; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.1s; }
+        .card:active { transform: scale(0.98); background: #f9fafb; }
+        
+        .card-left { display: flex; align-items: center; gap: 15px; }
+        .icon-box { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .play-icon { background: #eef2ff; color: #4f46e5; } /* Blue for Video */
+        .pdf-icon { background: #fff1f2; color: #e11d48; }  /* Red for PDF */
+        
+        .card-info h4 { margin: 0; font-size: 15px; color: #1f2937; font-weight: 600; }
+        .card-info p { margin: 3px 0 0; font-size: 12px; color: #6b7280; }
+
+        /* Responsive Modal Video Player */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* Aspect Ratio Logic 16:9 */
+        .video-wrapper {
+            width: 100%;
+            max-width: 100%;
+            aspect-ratio: 16 / 9; /* Magic Logic for Perfect Size */
+            background: black;
+            position: relative;
+        }
+        iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
+        
+        .close-btn { color: white; background: #4f46e5; padding: 10px 25px; margin-top: 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h3>Hindi Sahitya (Full Course)</h3>
+        <small>MENTOR: JAI SIR | PRO SERVER</small>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="show('video')">LECTURES</div>
+        <div class="tab" onclick="show('notes')">PDF NOTES</div>
+        <div class="tab">DOUBTS</div>
+    </div>
+
+    <div class="list active" id="videoList"></div>
+    <div class="list" id="notesList"></div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="video-wrapper">
+        <iframe id="frame" src="" allowfullscreen></iframe>
+    </div>
+    <div class="close-btn" onclick="closeVideo()">Close Video</div>
+</div>
+
+<script>
+    const vList = document.getElementById('videoList');
+    const nList = document.getElementById('notesList');
+    const baseUrl = "https://t.me/jaikipathshalax/";
+
+    // Video Logic (1-157)
+    for(let i=1; i<=157; i++){
+        let id = (i<=115) ? i+1 : i+43;
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+            <div class="card-left">
+                <div class="icon-box play-icon">▶</div>
+                <div class="card-info">
+                    <h4>Lecture ${i}</h4>
+                    <p>Tap to watch class</p>
+                </div>
+            </div>
+            <div style="color:#d1d5db">❯</div>
+        `;
+        div.onclick = () => {
+            document.getElementById('modal').style.display = 'flex';
+            document.getElementById('frame').src = baseUrl + id + "?embed=1&mode=tme";
+        };
+        vList.appendChild(div);
+    }
+
+    // PDF Logic (202-289)
+    let noteCount = 1;
+    for(let i=202; i<=289; i++){
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+             <div class="card-left">
+                <div class="icon-box pdf-icon">📄</div>
+                <div class="card-info">
+                    <h4>Class Note ${noteCount}</h4>
+                    <p>Tap to open PDF</p>
+                </div>
+            </div>
+            <div style="color:#d1d5db">⬇</div>
+        `;
+        div.onclick = () => window.open(baseUrl + i, '_blank');
+        nList.appendChild(div);
+        noteCount++;
+    }
+
+    function show(type){
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.list').forEach(l => l.classList.remove('active'));
+        if(type==='video'){ vList.classList.add('active'); document.querySelectorAll('.tab')[0].classList.add('active'); }
+        else { nList.classList.add('active'); document.querySelectorAll('.tab')[1].classList.add('active'); }
+    }
+
+    function closeVideo() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('frame').src = "";
+    }
+</script>
+</body>
+</html>
+
