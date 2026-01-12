@@ -23,7 +23,7 @@ let client;
         useWSS: false 
     });
     await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected! Smart Streaming ON.");
+    console.log("✅ Telegram Connected!");
 })();
 
 function getRealId(customId) {
@@ -32,7 +32,7 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. SMART VIDEO STREAMING (Big Chunks + Sequential) 🚀
+// 1. NATIVE VIDEO STREAMING (Most Stable) 🎥
 app.get('/api/video/:id', async (req, res) => {
     if (!client) return res.status(500).send("Booting...");
     
@@ -43,7 +43,8 @@ app.get('/api/video/:id', async (req, res) => {
 
         if (!media || !media.document) return res.status(404).send("Video not found");
 
-        const fileSize = media.document.size.toJSNumber ? media.document.size.toJSNumber() : media.document.size;
+        // Convert BigInt size to Number safely
+        const fileSize = Number(media.document.size);
         const range = req.headers.range;
 
         if (range) {
@@ -59,20 +60,14 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // MAGIC FIX: iterDownload with Bigger ChunkSize (1MB)
-            // Workers = 1 (Safety) | ChunkSize = 1024KB (Speed)
-            const stream = client.iterDownload(media, { 
+            // FIX: Library ko khud stream handle karne do (outputFile: res)
+            await client.downloadMedia(media, { 
+                outputFile: res, // Direct Stream to Browser
                 offset: start, 
                 limit: chunksize,
-                chunkSize: 1024 * 1024, // 1MB per request (Fast!)
-                workers: 1
+                workers: 1 // Stability ke liye 1 hi rakhein
             });
-
-            for await (const chunk of stream) {
-                res.write(chunk);
-            }
-            res.end();
-
+            
         } else {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -82,6 +77,7 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
+        console.error("Stream Error:", error);
         if (!res.headersSent) res.end();
     }
 });
@@ -96,7 +92,7 @@ app.get('/api/pdf/:id', async (req, res) => {
 
         if(!media) return res.status(404).send("PDF not found");
         
-        const fileSize = media.document.size;
+        const fileSize = Number(media.document.size);
         res.setHeader('Content-Length', fileSize);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Note_${msgId}.pdf"`);
