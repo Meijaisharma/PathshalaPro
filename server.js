@@ -15,15 +15,15 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// Telegram Connect (Optimized for Speed)
+// Optimize Connection
 (async () => {
     console.log("Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
         connectionRetries: 5,
-        useWSS: false 
+        useWSS: false // Faster on server
     });
     await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected! Ready for Speed.");
+    console.log("✅ Telegram Connected! High Speed Mode ON.");
 })();
 
 function getRealId(customId) {
@@ -32,9 +32,9 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. HIGH-SPEED VIDEO STREAMING (Range Support Added) 🚀
+// 1. ULTRA FAST VIDEO STREAMING 🚀
 app.get('/api/video/:id', async (req, res) => {
-    if (!client) return res.status(500).send("Booting up...");
+    if (!client) return res.status(500).send("Booting...");
     
     try {
         const msgId = getRealId(req.params.id);
@@ -46,7 +46,6 @@ app.get('/api/video/:id', async (req, res) => {
         const fileSize = media.document.size.toJSNumber ? media.document.size.toJSNumber() : media.document.size;
         const range = req.headers.range;
 
-        // --- MAGIC: Range Support (Instant Play) ---
         if (range) {
             const parts = range.replace(/bytes=/, "").split("-");
             const start = parseInt(parts[0], 10);
@@ -60,29 +59,31 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // Sirf utna hi download karega jitna chahiye (Fast!)
-            const stream = client.iterDownload(media, { offset: start, limit: chunksize });
-            for await (const chunk of stream) {
-                res.write(chunk);
-            }
+            // MAGIC LINE: workers: 4 (4x Speed)
+            await client.downloadMedia(media, { 
+                outputFile: res, 
+                offset: start, 
+                limit: chunksize,
+                workers: 4 
+            });
             res.end();
+
         } else {
-            // Agar purana browser hai
+            // Full download (Browsers usually don't do this for video)
             res.writeHead(200, {
                 "Content-Length": fileSize,
                 "Content-Type": "video/mp4",
             });
-            await client.downloadMedia(media, { outputFile: res });
+            await client.downloadMedia(media, { outputFile: res, workers: 4 });
         }
 
     } catch (error) {
-        console.error("Stream Error:", error);
-        // Video band hone par crash na ho
+        // Quiet fail for stream close
         if (!res.headersSent) res.status(500).send("Stream Error");
     }
 });
 
-// 2. FAST PDF API
+// 2. PDF API
 app.get('/api/pdf/:id', async (req, res) => {
     if (!client) return res.status(500).send("Wait...");
     try {
@@ -97,7 +98,8 @@ app.get('/api/pdf/:id', async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Note_${msgId}.pdf"`);
         
-        await client.downloadMedia(media, { outputFile: res, workers: 1 });
+        // PDF ke liye bhi workers badhaye
+        await client.downloadMedia(media, { outputFile: res, workers: 4 });
 
     } catch (e) {
         res.status(500).send("Error");
@@ -118,7 +120,6 @@ app.get('/api/meta/:id', async (req, res) => {
     }
 });
 
-// Route Fix
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'public/index.html'));
 });
