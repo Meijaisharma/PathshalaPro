@@ -15,30 +15,26 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// --- HEARTBEAT SYSTEM (Ye connection zinda rakhega) ---
+// --- HEARTBEAT & AUTO-RECONNECT SYSTEM ---
 async function startTelegram() {
     console.log("🔄 Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
         connectionRetries: 5,
-        useWSS: true // Stable Connection
+        useWSS: true, // Render ke liye sabse best setting
+        deviceModel: "PathshalaServer",
+        appVersion: "1.0.0"
     });
     
-    await client.start({ onError: (err) => console.log("Telegram Error:", err) });
-    console.log("✅ Telegram Connected!");
-
-    // Har 30 second me ping karega
+    await client.start({ onError: (err) => console.log("Client Error:", err) });
+    console.log("✅ Telegram Connected! Ultimate Mode.");
+    
+    // Heartbeat: Har 30 sec me connection check karega
     setInterval(async () => {
-        try {
-            if (!client.connected) {
-                console.log("⚠️ Reconnecting...");
-                await client.connect();
-            }
-            // Ek chhota sa message fetch karke connection active rakhein
-            await client.getMe(); 
-        } catch (e) {
-            console.log("Heartbeat skipped");
+        if (!client.connected) {
+            console.log("⚠️ Connection lost, reconnecting...");
+            try { await client.connect(); } catch(e) {}
         }
-    }, 30000); // 30 Seconds
+    }, 30000);
 }
 
 startTelegram();
@@ -49,16 +45,17 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. ROBUST VIDEO STREAMING (Auto-Reconnect) 🛡️
+// 1. STABLE VIDEO STREAMING (Native + WSS) 🛡️
 app.get('/api/video/:id', async (req, res) => {
-    // Agar connection toot gya ho, to turant wapas jodo
+    // Request aate hi connection check karo
     if (!client || !client.connected) {
-        console.log("🔌 Reconnecting for video request...");
-        await client.connect();
+        console.log("🔌 Reconnecting for video...");
+        try { await client.connect(); } catch(e) { return res.status(500).send("Connection Error"); }
     }
     
     try {
         const msgId = getRealId(req.params.id);
+        // FRESH FETCH: Har baar naya message layenge taaki link expire na ho
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
         const media = messages[0]?.media;
 
@@ -67,7 +64,7 @@ app.get('/api/video/:id', async (req, res) => {
         const fileSize = Number(media.document.size);
         const range = req.headers.range;
 
-        // HEAD Request (Fast Check)
+        // Browser check (HEAD request)
         if (req.method === 'HEAD') {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -90,12 +87,12 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // Native Stream with 1 Worker (Most Stable)
+            // ERROR FIX IS HERE: Using downloadMedia (Native) instead of iterDownload
             await client.downloadMedia(media, { 
                 outputFile: res, 
                 offset: start, 
                 limit: chunksize,
-                workers: 1
+                workers: 1 // Stability ke liye 1 hi rakhein
             });
         } else {
             res.writeHead(200, {
@@ -106,7 +103,7 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Stream Error (Normal if user closed video):", error.message);
+        // Error chupchap handle karein taaki crash na ho
         if (!res.headersSent) res.end();
     }
 });
