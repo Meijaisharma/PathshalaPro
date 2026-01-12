@@ -23,7 +23,7 @@ let client;
         useWSS: false 
     });
     await client.start({ onError: (err) => console.log(err) });
-    console.log("✅ Telegram Connected! Gold Standard Mode.");
+    console.log("✅ Telegram Connected! Emergency Mode.");
 })();
 
 function getRealId(customId) {
@@ -32,9 +32,9 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. VIDEO STREAMING (The Logic that worked previously) 🚀
+// 1. STABLE STREAMING (Small Packets) 🐢 -> 🐇
 app.get('/api/video/:id', async (req, res) => {
-    if (!client) return res.status(500).send("Booting...");
+    if (!client) return res.status(500).send("Server starting...");
     
     try {
         const msgId = getRealId(req.params.id);
@@ -46,7 +46,7 @@ app.get('/api/video/:id', async (req, res) => {
         const fileSize = Number(media.document.size);
         const range = req.headers.range;
 
-        // Browser aksar pehle size puchta hai (HEAD request)
+        // HEAD Request (Browser check)
         if (req.method === 'HEAD') {
             res.writeHead(200, {
                 "Content-Length": fileSize,
@@ -69,19 +69,16 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // MANUAL STREAM CONTROL (Ye wala logic best hai)
+            // SMALLER CHUNKS = FASTER START
             const stream = client.iterDownload(media, { 
                 offset: start, 
                 limit: chunksize,
-                chunkSize: 1024 * 1024, // 1MB Chunks (Best for Speed)
-                workers: 1 // Stable Streaming
+                chunkSize: 128 * 1024, // 128KB (Chote packets jaldi load honge)
+                workers: 1
             });
 
             for await (const chunk of stream) {
-                // Agar browser ready nahi hai, to wait karo (Anti-Buffer Logic)
-                if (!res.write(chunk)) {
-                    await new Promise(resolve => res.once('drain', resolve));
-                }
+                res.write(chunk);
             }
             res.end();
 
@@ -94,13 +91,13 @@ app.get('/api/video/:id', async (req, res) => {
         }
 
     } catch (error) {
+        console.log("Stream Error:", error);
         if (!res.headersSent) res.end();
     }
 });
 
 // 2. PDF API
 app.get('/api/pdf/:id', async (req, res) => {
-    if (!client) return res.status(500).send("Wait...");
     try {
         const msgId = parseInt(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
@@ -121,15 +118,12 @@ app.get('/api/pdf/:id', async (req, res) => {
 
 // 3. META API
 app.get('/api/meta/:id', async (req, res) => {
-    if (!client) return res.status(500).json({ text: "Loading..." });
     try {
         const msgId = getRealId(req.params.id);
         const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
-        const msg = messages[0];
-        const caption = msg?.message || "No description.";
-        res.json({ text: caption });
+        res.json({ text: messages[0]?.message || "No description." });
     } catch (e) {
-        res.status(500).json({ text: "Error" });
+        res.json({ text: "Loading..." });
     }
 });
 
