@@ -1,5 +1,5 @@
 const express = require('express');
-const { TelegramClient } = require("telegram");
+const { TelegramClient, Api } = require("telegram"); // Api import kiya
 const { StringSession } = require("telegram/sessions");
 const path = require('path');
 const cors = require('cors');
@@ -15,22 +15,18 @@ const stringSession = new StringSession(process.env.SESSION_STRING);
 
 let client; 
 
-// --- ROBUST CONNECTION SYSTEM ---
 async function startTelegram() {
     console.log("🔄 Starting System...");
     client = new TelegramClient(stringSession, apiId, apiHash, { 
-        connectionRetries: 10,
-        useWSS: true, // Render Friendly
-        autoReconnect: true
+        connectionRetries: 5,
+        useWSS: true, 
     });
     
     await client.start({ onError: (err) => console.log("System Error:", err) });
-    console.log("✅ VERSION 2.0 LIVE: Telegram Connected!");
+    console.log("✅ VERSION 3.0 LIVE: Manual Location Mode");
     
-    // Heartbeat: Har 20 sec me ping karega
     setInterval(async () => {
         if (!client.connected) {
-            console.log("⚠️ Heartbeat: Reconnecting...");
             try { await client.connect(); } catch(e) {}
         }
     }, 20000);
@@ -44,30 +40,31 @@ function getRealId(customId) {
     return customId + 43;
 }
 
-// 1. SELF-HEALING VIDEO API 🛠️
+// 1. ADVANCED VIDEO API (Manual Location Construction) 🔧
 app.get('/api/video/:id', async (req, res) => {
     try {
         if (!client.connected) await client.connect();
 
         const msgId = getRealId(req.params.id);
         
-        // Retry Logic (Agar fail ho to 3 baar koshish kare)
-        let media = null;
-        for(let i=0; i<3; i++) {
-            try {
-                const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
-                media = messages[0]?.media;
-                if(media) break; // Mil gya to loop todo
-            } catch(e) {
-                console.log(`Retry ${i+1} fetching video...`);
-                await new Promise(r => setTimeout(r, 1000)); // 1 sec wait
-            }
-        }
+        // 1. Message Fetch karo
+        const messages = await client.getMessages("jaikipathshalax", { ids: [msgId] });
+        const media = messages[0]?.media;
 
         if (!media || !media.document) return res.status(404).send("Video not found");
 
-        const fileSize = Number(media.document.size);
+        const doc = media.document;
+        const fileSize = Number(doc.size);
         const range = req.headers.range;
+
+        // 2. MANUAL LOCATION BANANA (Ye Error Fix karega) 🛠️
+        // Library ko guess mat karne do, khud location bana kar do
+        const inputLocation = new Api.InputDocumentFileLocation({
+            id: doc.id,
+            accessHash: doc.accessHash,
+            fileReference: doc.fileReference,
+            thumbSize: ""
+        });
 
         // HEAD Request
         if (req.method === 'HEAD') {
@@ -92,23 +89,28 @@ app.get('/api/video/:id', async (req, res) => {
                 "Content-Type": "video/mp4",
             });
 
-            // NATIVE DOWNLOAD (Most Stable)
-            await client.downloadMedia(media, { 
+            // Yahan hum sidha 'inputLocation' pass kar rahe hain
+            await client.downloadFile(inputLocation, { 
                 outputFile: res, 
                 offset: start, 
                 limit: chunksize,
-                workers: 1
+                workers: 1,
+                dcId: doc.dcId // DC ID bhi explicitly bata di
             });
         } else {
             res.writeHead(200, {
                 "Content-Length": fileSize,
                 "Content-Type": "video/mp4",
             });
-            await client.downloadMedia(media, { outputFile: res, workers: 1 });
+            await client.downloadFile(inputLocation, { 
+                outputFile: res, 
+                workers: 1,
+                dcId: doc.dcId 
+            });
         }
 
     } catch (error) {
-        // Quiet fail
+        console.log("Stream Error:", error.message); // Clean Log
         if (!res.headersSent) res.end();
     }
 });
@@ -123,11 +125,24 @@ app.get('/api/pdf/:id', async (req, res) => {
         
         if(!media) return res.status(404).send("PDF not found");
         
-        res.setHeader('Content-Length', Number(media.document.size));
+        const doc = media.document;
+        // Manual Location for PDF too
+        const inputLocation = new Api.InputDocumentFileLocation({
+            id: doc.id,
+            accessHash: doc.accessHash,
+            fileReference: doc.fileReference,
+            thumbSize: ""
+        });
+
+        res.setHeader('Content-Length', Number(doc.size));
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="Note_${msgId}.pdf"`);
         
-        await client.downloadMedia(media, { outputFile: res, workers: 1 });
+        await client.downloadFile(inputLocation, { 
+            outputFile: res, 
+            workers: 1,
+            dcId: doc.dcId
+        });
     } catch (e) {
         res.status(500).send("Error");
     }
@@ -151,13 +166,4 @@ app.get(/.*/, (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-
-
-
-
-
-
-
-
-
 
