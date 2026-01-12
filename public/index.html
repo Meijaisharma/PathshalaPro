@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pathshala Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PathshalaX Player</title>
     <script defer>
     document.body.appendChild(document.createElement('div')).setAttribute('id','chatBubbleRoot');
     window.agx = '6934343387f32926e0ce98c7nh68JtWTZWMcl+4M7hhx0Q==|j60xUyLrrN6uagKuD9uuWwxutxoXrdgRUbh4ouR1n8U=';
@@ -11,134 +11,293 @@
     <script defer src="https://storage.googleapis.com/agentx-cdn-01/agentx-chat.js"></script>
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f3f4f6; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 480px; background: white; min-height: 100vh; padding-bottom: 80px; position: relative; }
-        
-        /* Header & Tabs */
-        .header { padding: 20px; border-bottom: 1px solid #e5e7eb; background: white; position: sticky; top: 0; z-index: 10; }
-        .header h3 { margin: 0; font-size: 18px; color: #111827; }
-        .header small { font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
-        
-        .tabs { display: flex; padding: 0 20px; border-bottom: 1px solid #e5e7eb; background: white; }
-        .tab { padding: 15px 20px 15px 0; font-weight: 600; font-size: 14px; color: #9ca3af; cursor: pointer; position: relative; }
-        .tab.active { color: #111827; }
-        .tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 20px; height: 2px; background: #111827; }
-        
-        /* Lists */
-        .list { padding: 20px; display: none; }
-        .list.active { display: block; }
-        
-        /* Cards (Beautiful Design) */
-        .card { background: white; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: transform 0.1s; }
-        .card:active { transform: scale(0.98); background: #f9fafb; }
-        
-        .card-left { display: flex; align-items: center; gap: 15px; }
-        .icon-box { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .play-icon { background: #eef2ff; color: #4f46e5; } /* Blue for Video */
-        .pdf-icon { background: #fff1f2; color: #e11d48; }  /* Red for PDF */
-        
-        .card-info h4 { margin: 0; font-size: 15px; color: #1f2937; font-weight: 600; }
-        .card-info p { margin: 3px 0 0; font-size: 12px; color: #6b7280; }
-
-        /* Responsive Modal Video Player */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
-        
-        /* Aspect Ratio Logic 16:9 */
-        .video-wrapper {
-            width: 100%;
-            max-width: 100%;
-            aspect-ratio: 16 / 9; /* Magic Logic for Perfect Size */
-            background: black;
-            position: relative;
+        /* --- NEW AESTHETIC COLOR PALETTE --- */
+        :root {
+            --primary: #2E4F4F;      /* Dark Green for headers, active tabs */
+            --secondary: #CFF09E;    /* Light Green for accents, icons */
+            --accent: #A5D6A7;       /* A slightly darker light green for hover/active states */
+            --bg: #F7F9F9;           /* Clean light gray/white background */
+            --card-bg: #FFFFFF;      /* Pure white for cards */
+            --text: #37474F;         /* Dark gray for main text */
+            --text-light: #78909C;   /* Lighter gray for secondary text */
+            --border: #E0E0E0;       /* Light gray for borders */
         }
-        iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+        .main-container { width: 100%; max-width: 480px; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* --- 1. VIDEO SECTION --- */
+        .video-container { position: sticky; top: 0; z-index: 100; background: black; width: 100%; aspect-ratio: 16/9; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .video-controls { position: absolute; top: 10px; right: 10px; z-index: 101; }
+        .quality-btn { background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(5px); }
+        .quality-menu { display: none; position: absolute; top: 40px; right: 0; background: rgba(0,0,0,0.8); border-radius: 8px; overflow: hidden; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .quality-menu button { display: block; width: 100%; padding: 10px 15px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .quality-menu button:last-child { border-bottom: none; }
+        .quality-menu button:hover { background: rgba(255,255,255,0.15); }
+
+        /* --- 2. INFO & TABS SECTION --- */
+        .info-section { padding: 20px 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); border-radius: 0 0 20px 20px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .video-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .video-meta { font-size: 13px; color: var(--text-light); margin-top: 8px; font-weight: 500; }
+
+        .tabs-nav { display: flex; justify-content: space-around; padding: 12px 0; background: var(--card-bg); border-radius: 20px; margin: 0 10px 10px 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-light); font-size: 11px; cursor: pointer; width: 20%; transition: color 0.2s; }
+        .nav-item.active { color: var(--primary); font-weight: 600; }
+        .nav-icon { font-size: 22px; margin-bottom: 5px; }
+
+        /* --- 3. CONTENT SECTION --- */
+        .content-area { flex: 1; background: var(--bg); overflow-y: auto; padding: 0 10px; }
         
-        .close-btn { color: white; background: #4f46e5; padding: 10px 25px; margin-top: 20px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 5px; }
+        .section-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); }
+        .close-icon { font-size: 24px; color: var(--text-light); cursor: pointer; line-height: 1; padding: 5px; transition: color 0.2s; }
+        .close-icon:hover { color: var(--primary); }
+
+        .list-container { padding: 0; }
+        .list-item { display: flex; align-items: center; padding: 12px 15px; background: var(--card-bg); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .list-item:active { transform: scale(0.98); }
+        .item-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 18px; flex-shrink: 0; }
+        .play-icon { background: var(--secondary); color: var(--primary); }
+        .pdf-icon { background: var(--secondary); color: var(--primary); }
+        .item-info { flex: 1; }
+        .item-title { font-size: 15px; font-weight: 600; margin: 0; color: var(--text); }
+        .item-desc { font-size: 12px; color: var(--text-light); margin: 4px 0 0; }
+        
+        /* PDF Actions */
+        .pdf-actions { display: flex; align-items: center; gap: 10px; }
+        .pdf-btn { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s; display: flex; align-items: center; gap: 5px; }
+        .pdf-open { background: var(--secondary); color: var(--primary); }
+        .pdf-download { background: var(--border); color: var(--text); }
+        .pdf-btn:hover { opacity: 0.9; }
+        
+        .item-arrow { color: var(--text-light); font-size: 18px; }
+        .list-item.playing { background: var(--secondary); border: 1px solid var(--primary); }
+        .list-item.playing .item-title { color: var(--primary); }
+
+        /* Chat/Doubt Section */
+        .chat-section { display: none; padding: 30px 20px; text-align: center; color: var(--text-light); background: var(--card-bg); border-radius: 20px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chat-input-area { margin-top: 25px; display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 12px 15px; border: 1px solid var(--border); border-radius: 25px; outline: none; font-size: 14px; background: var(--bg); }
+        .send-btn { padding: 12px 25px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s; }
+        .send-btn:hover { background: #1e3636; }
+
+        /* Utility classes */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h3>Hindi Sahitya (Full Course)</h3>
-        <small>MENTOR: JAI SIR | PRO SERVER</small>
+<div class="main-container">
+    <div class="video-container">
+        <video id="mainVideoPlayer" controls playsinline controlsList="nodownload" poster="https://via.placeholder.com/640x360/2E4F4F/CFF09E?text=PathshalaX">
+            Your browser does not support video.
+        </video>
+        <div class="video-controls">
+            <button class="quality-btn" onclick="toggleQualityMenu()">⚙️ Quality</button>
+            <div class="quality-menu" id="qualityMenu">
+                <button onclick="setQuality('1080p')">1080p FHD</button>
+                <button onclick="setQuality('1440p')">1440p QHD</button>
+                <button onclick="setQuality('720p')">720p HD</button>
+                <button onclick="setQuality('480p')">480p SD</button>
+            </div>
+        </div>
     </div>
 
-    <div class="tabs">
-        <div class="tab active" onclick="show('video')">LECTURES</div>
-        <div class="tab" onclick="show('notes')">PDF NOTES</div>
-        <div class="tab">DOUBTS</div>
+    <div class="info-section">
+        <h3 class="video-title" id="videoTitle">Welcome to PathshalaX</h3>
+        <p class="video-meta">Mentor: Jai Sir • Professional Learning</p>
     </div>
 
-    <div class="list active" id="videoList"></div>
-    <div class="list" id="notesList"></div>
-</div>
-
-<div class="modal" id="modal">
-    <div class="video-wrapper">
-        <iframe id="frame" src="" allowfullscreen></iframe>
+    <div class="tabs-nav">
+        <div class="nav-item active" onclick="switchTab('timeline')">
+            <span class="nav-icon">⏱️</span>
+            <span>Timeline</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('notes')">
+            <span class="nav-icon">📄</span>
+            <span>Notes</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('comments')">
+            <span class="nav-icon">💬</span>
+            <span>Comments</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('attachments')">
+            <span class="nav-icon">📎</span>
+            <span>Attachm...</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('rating')">
+            <span class="nav-icon">⭐</span>
+            <span>Rating</span>
+        </div>
     </div>
-    <div class="close-btn" onclick="closeVideo()">Close Video</div>
+
+    <div class="content-area">
+        <div class="section-header">
+            <h4 class="section-title">Course Content</h4>
+            <span class="close-icon" onclick="toggleChatSystem()">✕</span>
+        </div>
+
+        <div id="timelineList" class="list-container">
+            </div>
+
+        <div id="notesList" class="list-container hidden">
+            </div>
+
+        <div id="chatSystem" class="chat-section">
+            <div style="font-size: 50px; margin-bottom: 15px; color: var(--secondary);">💭</div>
+            <h3 style="color: var(--primary);">Doubts & Discussion</h3>
+            <p>Ask questions or discuss topics with teachers and classmates.</p>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" placeholder="Type your doubt here...">
+                <button class="send-btn">Send</button>
+            </div>
+        </div>
+         
+         <div id="commentsPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Comments Section</h3><p>Coming soon...</p></div>
+        <div id="attachmentsPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Attachments Section</h3><p>No attachments.</p></div>
+        <div id="ratingPlaceholder" class="chat-section hidden"><h3 style="color: var(--primary);">Rate this Course</h3><p>Coming soon...</p></div>
+    </div>
 </div>
 
 <script>
-    const vList = document.getElementById('videoList');
-    const nList = document.getElementById('notesList');
-    const baseUrl = "https://t.me/jaikipathshalax/";
+    const videoPlayer = document.getElementById('mainVideoPlayer');
+    const videoTitleDisplay = document.getElementById('videoTitle');
+    const qualityMenu = document.getElementById('qualityMenu');
+    let currentPlayingId = null;
 
-    // Video Logic (1-157)
+    // --- DATA POPULATION ---
+    const timelineList = document.getElementById('timelineList');
+    const notesList = document.getElementById('notesList');
+
+    // Load Lectures (1-157)
     for(let i=1; i<=157; i++){
-        let id = (i<=115) ? i+1 : i+43;
         let div = document.createElement('div');
-        div.className = 'card';
+        div.className = 'list-item';
+        div.id = `lecture-${i}`;
         div.innerHTML = `
-            <div class="card-left">
-                <div class="icon-box play-icon">▶</div>
-                <div class="card-info">
-                    <h4>Lecture ${i}</h4>
-                    <p>Tap to watch class</p>
-                </div>
+            <div class="item-icon play-icon">▶</div>
+            <div class="item-info">
+                <h5 class="item-title">Lecture ${i}: Hindi Sahitya Part ${i}</h5>
+                <p class="item-desc">Tap to play video</p>
             </div>
-            <div style="color:#d1d5db">❯</div>
+            <div class="item-arrow">❯</div>
         `;
-        div.onclick = () => {
-            document.getElementById('modal').style.display = 'flex';
-            document.getElementById('frame').src = baseUrl + id + "?embed=1&mode=tme";
-        };
-        vList.appendChild(div);
+        div.onclick = () => playVideo(i);
+        timelineList.appendChild(div);
     }
 
-    // PDF Logic (202-289)
+    // Load Notes (202-289) with OPEN and DOWNLOAD options
     let noteCount = 1;
     for(let i=202; i<=289; i++){
         let div = document.createElement('div');
-        div.className = 'card';
+        div.className = 'list-item';
+        // Using 'a' tags for download/open behavior
         div.innerHTML = `
-             <div class="card-left">
-                <div class="icon-box pdf-icon">📄</div>
-                <div class="card-info">
-                    <h4>Class Note ${noteCount}</h4>
-                    <p>Tap to open PDF</p>
-                </div>
+            <div class="item-icon pdf-icon">📄</div>
+            <div class="item-info">
+                <h5 class="item-title">Class Note ${noteCount}</h5>
+                <p class="item-desc">PDF Document</p>
             </div>
-            <div style="color:#d1d5db">⬇</div>
+            <div class="pdf-actions">
+                <a href="/api/pdf/${i}" class="pdf-btn pdf-open">Open</a>
+                <a href="/api/pdf/${i}" download="Note_${noteCount}.pdf" class="pdf-btn pdf-download">Isse Download Kare</a>
+            </div>
         `;
-        div.onclick = () => window.open(baseUrl + i, '_blank');
-        nList.appendChild(div);
+        // Removed onclick from the main div, actions are now on the buttons
+        notesList.appendChild(div);
         noteCount++;
     }
 
-    function show(type){
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.list').forEach(l => l.classList.remove('active'));
-        if(type==='video'){ vList.classList.add('active'); document.querySelectorAll('.tab')[0].classList.add('active'); }
-        else { nList.classList.add('active'); document.querySelectorAll('.tab')[1].classList.add('active'); }
+    // Play first video automatically (optional)
+    // playVideo(1); 
+
+    // --- FUNCTIONS ---
+
+    function playVideo(id) {
+        // Update active state in list
+        if(currentPlayingId) document.getElementById(`lecture-${currentPlayingId}`).classList.remove('playing');
+        document.getElementById(`lecture-${id}`).classList.add('playing');
+        currentPlayingId = id;
+
+        // Update title and play
+        videoTitleDisplay.textContent = `Lecture ${id}: Hindi Sahitya Part ${id}`;
+        videoPlayer.src = `/api/video/${id}`;
+        videoPlayer.play();
+        
+        // Ensure Timeline tab is active
+        switchTab('timeline');
     }
 
-    function closeVideo() {
-        document.getElementById('modal').style.display = 'none';
-        document.getElementById('frame').src = "";
+    function switchTab(tabName) {
+        // 1. Reset Nav Items
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        // 2. Set active nav item (simple check based on onclick text)
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if(item.innerText.toLowerCase().includes(tabName.substring(0,3))) item.classList.add('active');
+        });
+
+        // 3. Hide all content sections
+        document.querySelectorAll('.list-container, .chat-section').forEach(el => el.classList.add('hidden'));
+
+        // 4. Show selected content
+        if(tabName === 'timeline') document.getElementById('timelineList').classList.remove('hidden');
+        else if(tabName === 'notes') document.getElementById('notesList').classList.remove('hidden');
+        else if(tabName === 'comments') document.getElementById('commentsPlaceholder').classList.remove('hidden');
+        else if(tabName === 'attachments') document.getElementById('attachmentsPlaceholder').classList.remove('hidden');
+        else if(tabName === 'rating') document.getElementById('ratingPlaceholder').classList.remove('hidden');
+        
+        // Ensure Chat System is hidden when switching tabs
+        document.getElementById('chatSystem').classList.add('hidden');
+        document.querySelector('.section-title').textContent = "Course Content";
+        document.querySelector('.close-icon').textContent = "✕";
     }
+
+    // Toggle between Content List and Chat System using 'X' button
+    function toggleChatSystem() {
+        const chatSystem = document.getElementById('chatSystem');
+        const sectionTitle = document.querySelector('.section-title');
+        const closeIcon = document.querySelector('.close-icon');
+        
+        // Find currently active list/placeholder to toggle back
+        const activeTab = document.querySelector('.nav-item.active').innerText.toLowerCase();
+        let activeContentId = '';
+        if(activeTab.includes('time')) activeContentId = 'timelineList';
+        else if(activeTab.includes('note')) activeContentId = 'notesList';
+        else activeContentId = activeTab.substring(0,3) + 'Placeholder'; // simplistic fallback
+
+        if (chatSystem.classList.contains('hidden')) {
+            // Show Chat System
+            document.querySelectorAll('.list-container, .chat-section:not(#chatSystem)').forEach(el => el.classList.add('hidden'));
+            chatSystem.classList.remove('hidden');
+            sectionTitle.textContent = "Doubts & Chat";
+            closeIcon.textContent = "←"; // Change X to Back arrow
+        } else {
+            // Hide Chat System & Show back the active tab's content
+            chatSystem.classList.add('hidden');
+            document.getElementById(activeContentId).classList.remove('hidden');
+            sectionTitle.textContent = "Course Content";
+            closeIcon.textContent = "✕"; // Change Back arrow to X
+        }
+    }
+
+    // Video Quality UI Menu Toggle
+    function toggleQualityMenu() {
+        qualityMenu.style.display = qualityMenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function setQuality(quality) {
+        alert(`Quality set to ${quality} (UI Demo Only)`);
+        toggleQualityMenu();
+        // Real implementation would require backend transcoding support.
+    }
+
+    // Close quality menu when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.video-controls')) {
+            qualityMenu.style.display = 'none';
+        }
+    });
 </script>
 </body>
 </html>
